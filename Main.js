@@ -6,7 +6,19 @@ var plant2000 = getColumn("US Agricultural Crops", "2000 Yield");
 var finalDataBig = [];
 var biggestYield = {"name": '', "c_yield" : 0};
 
-// Set up plants
+// Set up inventory
+var inventory = {
+  "purplePotato": 0,
+  "redPotato": 0,
+  "yellowPotato": 0,
+  
+  "purpleSeeds": 0,
+  "redSeeds": 0,
+  "yellowSeeds": 3
+};
+
+updateSeedCount();
+
 var chosenCrop = "";
 var crops = [
   {
@@ -55,6 +67,15 @@ var crops = [
     "stage": null
   },
 ];
+
+//Other Farming Variables
+var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+var year = 2000;
+var time = months[0] + ", " + year;
+setProperty("dayLabel", "text", time);
+
+var money = 250;
+setProperty("moneyLabel", "text", money);
 
 // Sort data
 function getBiggestYield(year){
@@ -129,7 +150,8 @@ onEvent("tile9", "click", function(){
 
 //function to pick seeds
 function pickSeeds(color){
-  if(getProperty(color + "PotatoSeeds", "border-width") != 3){
+  if(getProperty(color + "PotatoSeeds", "border-width") != 3 &&
+  inventory[color + "Seeds"] > 0){
     setProperty("purplePotatoSeeds", "border-width", 0);
     setProperty("redPotatoSeeds", "border-width", 0);
     setProperty("yellowPotatoSeeds", "border-width", 0);
@@ -154,5 +176,15 @@ function checkAndSet(tile, seed) {
       "type": seed,
       "stage": 0
     };
+    
+    inventory[seed + "Seeds"]--;
+    updateSeedCount();
   }
+}
+
+// function to update seed count
+function updateSeedCount(){
+  setProperty("yellowSeedCount", "text", "x" + inventory.yellowSeeds);
+  setProperty("redSeedCount", "text", "x" + inventory.redSeeds);
+  setProperty("purpleSeedCount", "text", "x" + inventory.purpleSeeds);
 }
