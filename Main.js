@@ -48,8 +48,8 @@ var months = [["January", "Winter"], ["February", "Winter"], ["March", "Spring"]
 
 var gameYear = 2000;
 var month = 2;
-
-var money = 25;
+var money = 100;
+var monthsInDebt = 0;
 
 //Financial Data
 var moneyEarnedInMonth = 0;
@@ -69,7 +69,16 @@ getBiggestYield(year).c_yield + " " + getBiggestYield(year).name +
 //switch screens
 onEvent("playButton", "click", function(){
   setScreen("farmScreen");
+  displayAlert("Welcome to F.A.R.M. soldier! Get planting, harvesting," + 
+  " don't go into debt, and you will have a good time here. Bye now! " +
+  "\n\n- General Korov", "WELCOME", "Begin");
 });
+
+//close popup
+onEvent("popUpButton", "click", function(){
+  closeAlert();
+});
+
 
 //put border on selected seed packet
 {
@@ -127,17 +136,15 @@ onEvent("startMonth", "click", function(){
   //Set screen and time
   setScreen("farmScreen");
   month++;
-  
+    
   if(month > 11){
     month = 0;
     gameYear++;
   }
-  
-  //update ui
-  updateUI();
-  
-  //reset money earned
+    
+  //reset money earned and pay lease
   moneyEarnedInMonth = 0;
+  money += leasePayment;
   
   //Update all the crops
   for(var i = 0; i < crops.length; i++){
@@ -165,7 +172,106 @@ onEvent("startMonth", "click", function(){
       + crops[i].variation + ".png");
     }
   }
+  
+  var potatoType;
+  
+  if(money < 0){
+    //Debt based alerts
+    monthsInDebt++;
+    if(monthsInDebt == 1){
+      displayAlert("Soldier, your lease is " + monthsInDebt + " month overdue! " +
+      "You have " + (5-monthsInDebt) + " months to pay up before we sieze our" +
+      " property. You have been warned. \n\n- General Korov", "WARNING", "Okay...");
+    }else if (monthsInDebt == 5){
+      displayAlert("Hello there soldier. We were not kidding when we " + 
+      "said we were going to seize your property if you couldn't pay. " + 
+      "This is the end.\n\n- General Korov", "GOODBYE", "WAIT NO-");
+    }
+  }else{
+    monthsInDebt = 0;
+    //Random event alerts
+    var randomEvent = randomNumber(1, 100);
+    
+    if(randomEvent <= 3){
+      potatoType = potatoColorPicker();
+      
+      //check if they have more than 0 potatoes
+      if(inventory[potatoType + "Potato"] > 0){
+        inventory[potatoType + "Potato"] = 0;
+        
+        displayAlert("Heyo Boss... I have news. Apparently a group of " +
+        "\"elite\" terrorists known as the Black Hand decided to " +
+        "steal all our " + potatoType + " potatoes...\n\n- Your Assistant",
+        "THEFT", "oof");
+      }
+    }else if(randomEvent <= 6){
+      potatoType = potatoColorPicker();
+      
+      //check if they have more than 0 seeds
+      if(inventory[potatoType + "Seeds"] > 0){
+        inventory[potatoType + "Seeds"] = 0;
+        
+        displayAlert("Heya Boss... I have news. Soooo a group of " +
+        "\"impressive\" renegades known as the White Hand decided to " +
+        "steal all our " + potatoType + " seeds...\n\n- Your Assistant",
+        "THEFT", "rip");
+      }
+    }else if(randomEvent <= 9){
+      var moneySpent = randomNumber(5, Math.round(money/2));
+      money -= moneySpent;
+      
+      displayAlert("Remember our shed of gunpowder? Well um I " +
+        "kinda blew it up. Uh yeah... it's costing us " + moneySpent + 
+        " coins to fix this mess. \n\n- Your Assistant",
+        "OOPS!", "bruh");
+    }else if(randomEvent <= 20 && months[month][1] == "Spring"){
+      var moneyRaise = randomNumber(2, 7);
+      leasePayment -= moneyRaise;
+      
+      displayAlert("Hello soldier. This is a notice that your lease will " +
+        "be increasing by " + moneyRaise + 
+        " coins and this is effective immediately. \n\n- General Korov",
+        "LEASE", "Alright");
+    }else if(randomEvent <= 20 && months[month][1] == "Winter"){
+      var chosenTile = randomNumber(0, 9);
+      var counter = 0;
+      while(crops[chosenTile].planted == false){
+        chosenTile = randomNumber(0, 9);
+        counter++;
+        
+        if(counter == 100){
+          break;
+        }
+      }
+      
+      crops[chosenTile] = new Plant();
+      setProperty("tile" + (chosenTile+1), "image", "dirt_tile_0_" 
+      + randomNumber(1, 3) + ".png");
+      
+      if(counter != 100){
+        displayAlert("So uhm, a flash freeze happened and " + 
+      "one of our crops died. Yeah... unfortunate... \n\n- Your Assistant",
+        "FREEZE", "damm");
+      }
+    }
+  }
+  
+  //update ui
+  updateUI();
 });
+
+//function to randomly pick a potato color
+function potatoColorPicker(){
+  var potatoSelector = randomNumber(1,3);
+      
+  if(potatoSelector == 1){
+    return "yellow";
+  }else if(potatoSelector == 2){
+      return "red";
+  }else{
+      return "purple";
+  }
+}
 
 //function to set various UI components
 function updateUI(){
@@ -240,7 +346,6 @@ function checkAndSet(tile, seed) {
     
     //reset the tile
     crops[tile-1] = new Plant();
-
   }
 }
 
@@ -258,6 +363,30 @@ function displayFinancialInfo(){
     setProperty("coinsKept", "text-color", rgb(255, 255, 255));
   }
   setProperty("coinsKept", "text", profit);
+}
+
+// Display an alert function
+function displayAlert(body, title, button){
+  //Make elemnts visible again
+  setProperty("popUpTitle", "hidden", false);
+  setProperty("popUpBodyBackdrop", "hidden", false);
+  setProperty("popUpBodyText", "hidden", false);
+  setProperty("popUpButton", "hidden", false);
+  setProperty("popUpBackdrop", "hidden", false);
+  
+  setProperty("popUpTitle", "text", title);
+  setProperty("popUpBodyText", "text", body);
+  setProperty("popUpButton", "text", button);
+}
+
+// Close an alert function
+function closeAlert(){
+  //Make elemnts visible again
+  setProperty("popUpTitle", "hidden", true);
+  setProperty("popUpBodyBackdrop", "hidden", true);
+  setProperty("popUpBodyText", "hidden", true);
+  setProperty("popUpButton", "hidden", true);
+  setProperty("popUpBackdrop", "hidden", true);
 }
 
 // Sort data function
